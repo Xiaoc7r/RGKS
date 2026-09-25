@@ -30,4 +30,6 @@ public interface ScheduleItemRepository extends JpaRepository<ScheduleItem, Long
     List<ScheduleItem> findEnrolledByOfferingId(@Param("offeringId") Long offeringId);
 
     List<ScheduleItem> findByOfferingIdInAndStatus(Collection<Long> offeringIds, EnrollmentStatus status);
+
+    void deleteByScheduleId(Long scheduleId);
 }

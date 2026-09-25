@@ -1,5 +1,6 @@
 package com.jlu.registration.module.catalog;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -40,14 +41,38 @@ public class CatalogService {
                     Course course = courseMap.get(offering.getCourseId());
                     Professor professor = professorMap.get(offering.getProfessorId());
                     long enrolled = scheduleItems.countEnrolledByOfferingId(offering.getId());
+                    Course prerequisite = course.getPrerequisiteCourseId() == null
+                            ? null : courseMap.get(course.getPrerequisiteCourseId());
                     return new CatalogController.OfferingView(
-                            offering.getId(), course.getCode(), course.getName(), course.getCredits(),
+                            offering.getId(), course.getId(), course.getCode(), course.getName(),
+                            course.getDepartment(), course.getCredits(),
+                            prerequisite == null ? null : prerequisite.getCode(), course.getTuition(),
                             professor == null ? "待定" : professor.getName(),
                             offering.getSemester(), offering.getDayOfWeek(),
                             offering.getStartPeriod(), offering.getEndPeriod(),
-                            offering.getCapacity(), enrolled, offering.getStatus());
+                            offering.getCapacity(), enrolled,
+                            Math.max(0, offering.getCapacity() - enrolled), offering.getStatus());
                 })
                 .toList();
     }
-}
 
+    public List<CatalogController.CourseView> listCourses() {
+        Map<Long, Course> courseMap = courses.findAll().stream()
+                .collect(Collectors.toMap(Course::getId, Function.identity()));
+        return courseMap.values().stream()
+                .sorted((left, right) -> left.getCode().compareTo(right.getCode()))
+                .map(course -> {
+                    Course prerequisite = course.getPrerequisiteCourseId() == null
+                            ? null : courseMap.get(course.getPrerequisiteCourseId());
+                    return new CatalogController.CourseView(
+                            course.getId(), course.getCode(), course.getName(), course.getDepartment(),
+                            course.getCredits(), prerequisite == null ? null : prerequisite.getCode(),
+                            course.getTuition());
+                }).toList();
+    }
+
+    public CatalogController.CatalogStatusView status() {
+        return new CatalogController.CatalogStatusView(
+                "LEGACY_CATALOG_OPEN_SQL_SIMULATOR", true, 10, Instant.now());
+    }
+}

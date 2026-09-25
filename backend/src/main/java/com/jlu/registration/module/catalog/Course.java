@@ -30,6 +30,10 @@ public class Course {
     @Column(nullable = false, length = 120)
     private String name;
 
+    // 兼容已有演示数据库：旧数据可由初始化器补齐院系字段。
+    @Column(length = 100)
+    private String department;
+
     @Column(nullable = false)
     private Integer credits;
 
@@ -38,13 +42,13 @@ public class Course {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal tuition;
 
-    public Course(String code, String name, Integer credits,
+    public Course(String code, String name, String department, Integer credits,
                   Long prerequisiteCourseId, BigDecimal tuition) {
         this.code = code;
         this.name = name;
+        this.department = department;
         this.credits = credits;
         this.prerequisiteCourseId = prerequisiteCourseId;
         this.tuition = tuition;
     }
 }
-

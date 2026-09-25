@@ -1,94 +1,54 @@
 # 高校选课注册系统
 
-这是 2026 软件工程课程设计的最小可运行架构。系统采用 Vue 前端、Spring Boot 后端、MySQL 数据库和 REST API，后端以模块化单体方式组织。
+面向 2026 软件工程课程设计的完整可运行实现。项目采用 Vue 3 + Spring Boot + MySQL，后端保持一个进程、七个清晰业务模块，既避免微服务带来的部署复杂度，也方便 7 名成员均等开发和答辩。
 
-当前版本已经形成一条可演示的最小业务闭环：
+## 已完成的业务闭环
 
-1. 学生、教师或注册管理员登录。
-2. 学生查看课程目录，建立 4 门主选课和 2 门备选课的课表并提交。
-3. 教师查看本人教学班和学生名单，录入成绩。
-4. 注册管理员关闭选课，系统取消不满足条件的教学班、尝试备选补位、冻结课表并生成计费记录。
-5. 学生查看成绩单。
+1. 学生、教师、注册管理员登录，后端按角色强制鉴权。
+2. 注册管理员完整维护学生与教师档案，身份证件仅返回掩码。
+3. 所有角色通过只读适配层查看旧课程目录、先修课、学费和教学班余量。
+4. 学生创建、保存、修改、删除课表，按 4 门主选 + 2 门备选提交。
+5. 教师按院系选择/退选教学班，系统检查时间冲突，并可查看本人班级名单。
+6. 教师为已结束课程录入 A/B/C/D/F/I，学生查看学分与 GPA 成绩单。
+7. 管理员关闭选课：取消无教师班、备选补位、取消不足 3 人班、冻结课表、生成计费并演示失败重试。
 
-## 技术架构
+## 架构
 
 ```text
-Vue 单页应用（localhost:5173）
-            |
-         REST API
-            |
-Spring Boot 模块化单体（localhost:8080）
-  | identity   账号和角色
-  | people     学生和教师档案
-  | catalog    课程目录和教学班
-  | registration  学生选课和课表
-  | teaching   教师任课和成绩
-  | operations 关选课和计费
-            |
-          MySQL 8
+Vue 3 SPA :5173 → REST/Basic Auth → Spring Boot :8080 → MySQL 8 :3307
+                                      ├─ 1 identity
+                                      ├─ 2 people
+                                      ├─ 3 catalog
+                                      ├─ 4 registration
+                                      ├─ 5 teaching
+                                      ├─ 6 grading
+                                      └─ 7 operations
 ```
 
-六个模块是代码和职责边界，不是六个独立进程。所有模块随一个 Spring Boot 应用部署，降低课程项目的开发和联调成本。详细分工见 [docs/team-division.md](docs/team-division.md)。
+七个模块是代码职责边界，不是七个独立服务。详细设计见 [架构说明](docs/architecture.md)，人员分工见 [七人分工](docs/team-division.md)。
 
-## 本机启动
+## 一键启动
 
-### 1. 启动 MySQL
-
-项目提供 Docker Compose 配置：
+在项目根目录运行：
 
 ```powershell
-cd course-registration-system
+docker compose up --build
+```
+
+浏览器访问 `http://localhost:5173`。如只启动数据库并本地调试：
+
+```powershell
 docker compose up -d mysql
-```
-
-默认数据库连接：
-
-```text
-数据库：course_registration
-账号：course_user
-密码：course_pass
-宿主机端口：3307（避免与你电脑上已有的 MySQL 3306 冲突）
-```
-
-如果使用本机已有 MySQL，可以通过环境变量覆盖：
-
-```powershell
-$env:DB_URL='jdbc:mysql://localhost:3306/course_registration?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false'
-$env:DB_USERNAME='你的数据库账号'
-$env:DB_PASSWORD='你的数据库密码'
-```
-
-### 2. 启动后端
-
-新开一个 PowerShell 窗口：
-
-```powershell
-cd course-registration-system/backend
+cd backend
 mvn spring-boot:run
-```
 
-健康检查地址：`http://localhost:8080/actuator/health`
-
-### 3. 启动前端
-
-再开一个 PowerShell 窗口：
-
-```powershell
-cd course-registration-system/frontend
+# 另开 PowerShell
+cd frontend
 npm install
 npm run dev
 ```
 
-浏览器访问：`http://localhost:5173`
-
-如需清空演示数据并从初始化状态重新开始，请先停止后端，然后执行：
-
-```powershell
-docker compose down -v
-docker compose up -d mysql
-```
-
-该命令只删除本项目 Compose 创建的 MySQL 数据卷。
+默认数据库为 `course_registration`，账号 `course_user`，密码 `course_pass`，宿主机端口 `3307`。清空演示数据可在停止服务后执行 `docker compose down -v`，该命令仅删除本项目的数据卷。
 
 ## 演示账号
 
@@ -98,30 +58,34 @@ docker compose up -d mysql
 | 教师 | `professor1` | `Professor123!` |
 | 注册管理员 | `registrar` | `Registrar123!` |
 
-首次启动会自动写入演示人员、课程、教学班、开放选课窗口和一条历史成绩。
+演示库另外预置两名背景学生，使四个主选教学班已有 2 人；`student1` 提交后恰好达到最低 3 人，便于演示正常开课。另有两个无人任教班，关选课时会被取消。
 
-## 测试与构建
-
-后端测试使用 H2 的 MySQL 兼容模式，不影响正式 MySQL 数据：
+## 验证
 
 ```powershell
 cd backend
 mvn test
-```
 
-前端生产构建：
-
-```powershell
-cd frontend
+cd ../frontend
+npm ci
 npm run build
+npm audit --audit-level=high
 ```
 
-集成测试覆盖角色权限以及学生选课、教师录成绩、管理员关选课和生成计费记录的完整最小流程。
+集成测试按七个模块各设一条主测试，覆盖权限、人员 CRUD、只读目录、4+2 课表、教师选课、成绩单以及结算/计费重试。完整人工用例见 [测试计划](docs/test-plan.md)。
 
-## 当前 MVP 边界
+## 课程项目边界
 
-- 登录采用 HTTP Basic，适合本机课程演示。后续可替换为 JWT，并在正式环境启用 HTTPS。
-- 旧课程目录系统通过只读 REST 资源和独立 `catalog` 模块模拟，没有搭建真实 Ingres 或 DEC VAX。
-- 计费系统用 `billing_records` 状态机模拟，保留了发送状态和重试次数。
-- 数据库表由 JPA 自动更新。进入稳定开发阶段后建议增加 Flyway 迁移脚本。
-- 当前页面优先保证六个模块均可演示，复杂交互、分页、审计日志和压力测试可在后续迭代补充。
+- HTTP Basic 仅用于本机答辩，凭据只保存在当前浏览器标签页；生产环境应改用 HTTPS + 会话或短期令牌。
+- 原始 Ingres/DEC VAX 无法在课程环境中接入，因此以只读 `catalog` 适配层明确模拟；系统没有课程目录写接口。
+- 外部计费以 `billing_records` 状态机模拟，可展示 PENDING、FAILED、SENT 与重试次数。
+- 使用 JPA 自动更新表结构，足以支撑课程演示；生产化时再引入 Flyway、审计日志和压力测试。
+
+## 文档导航
+
+- [需求覆盖矩阵](docs/requirements-coverage.md)
+- [七人分工与答辩边界](docs/team-division.md)
+- [架构和关键流程](docs/architecture.md)
+- [REST API](docs/api.md)
+- [测试计划](docs/test-plan.md)
+- [七人答辩指南](docs/defense-guide.md)

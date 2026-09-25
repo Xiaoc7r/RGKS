@@ -1,7 +1,11 @@
 package com.jlu.registration.module.people;
 
+import java.time.LocalDate;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -28,12 +32,25 @@ public class Professor {
     @Column(nullable = false, length = 80)
     private String name;
 
+    private LocalDate dateOfBirth;
+
+    @Column(length = 32)
+    private String identityNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private PersonStatus status = PersonStatus.ACTIVE;
+
     @Column(nullable = false, length = 100)
     private String department;
 
-    public Professor(String employeeNumber, String name, String department) {
+    public Professor(String employeeNumber, String name, LocalDate dateOfBirth,
+                     String identityNumber, PersonStatus status, String department) {
         this.employeeNumber = employeeNumber;
         this.name = name;
+        this.dateOfBirth = dateOfBirth;
+        this.identityNumber = identityNumber;
+        this.status = status;
         this.department = department;
     }
 }

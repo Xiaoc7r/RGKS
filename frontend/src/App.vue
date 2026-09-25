@@ -16,7 +16,10 @@ const navItems = computed(() => {
     items.push({ to: '/registration', label: '学生选课' })
     items.push({ to: '/report-card', label: '成绩单' })
   }
-  if (state.user?.role === 'PROFESSOR') items.push({ to: '/teaching', label: '教师教学' })
+  if (state.user?.role === 'PROFESSOR') {
+    items.push({ to: '/teaching', label: '任课与名单' })
+    items.push({ to: '/grading', label: '成绩管理' })
+  }
   if (state.user?.role === 'REGISTRAR') {
     items.push({ to: '/people', label: '人员档案' })
     items.push({ to: '/operations', label: '关选课与计费' })
@@ -54,4 +57,3 @@ function signOut() {
     <main v-else class="login-stage"><RouterView /></main>
   </div>
 </template>
-

@@ -1,4 +1,4 @@
-package com.jlu.registration.module.teaching;
+package com.jlu.registration.module.grading;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,4 +21,3 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
     boolean existsPassingGrade(@Param("studentId") Long studentId,
                                @Param("courseId") Long courseId);
 }
-

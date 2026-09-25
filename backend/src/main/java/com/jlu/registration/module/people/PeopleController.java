@@ -5,6 +5,7 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,18 +30,18 @@ public class PeopleController {
     }
 
     @GetMapping("/students")
-    public List<Student> students() {
+    public List<StudentView> students() {
         return service.listStudents();
     }
 
     @PostMapping("/students")
     @ResponseStatus(HttpStatus.CREATED)
-    public Student createStudent(@Valid @RequestBody StudentRequest request) {
+    public StudentView createStudent(@Valid @RequestBody StudentRequest request) {
         return service.createStudent(request);
     }
 
     @PutMapping("/students/{id}")
-    public Student updateStudent(@PathVariable Long id, @Valid @RequestBody StudentRequest request) {
+    public StudentView updateStudent(@PathVariable Long id, @Valid @RequestBody StudentRequest request) {
         return service.updateStudent(id, request);
     }
 
@@ -51,18 +52,18 @@ public class PeopleController {
     }
 
     @GetMapping("/professors")
-    public List<Professor> professors() {
+    public List<ProfessorView> professors() {
         return service.listProfessors();
     }
 
     @PostMapping("/professors")
     @ResponseStatus(HttpStatus.CREATED)
-    public Professor createProfessor(@Valid @RequestBody ProfessorRequest request) {
+    public ProfessorView createProfessor(@Valid @RequestBody ProfessorRequest request) {
         return service.createProfessor(request);
     }
 
     @PutMapping("/professors/{id}")
-    public Professor updateProfessor(@PathVariable Long id, @Valid @RequestBody ProfessorRequest request) {
+    public ProfessorView updateProfessor(@PathVariable Long id, @Valid @RequestBody ProfessorRequest request) {
         return service.updateProfessor(id, request);
     }
 
@@ -75,6 +76,9 @@ public class PeopleController {
     public record StudentRequest(
             @NotBlank String studentNumber,
             @NotBlank String name,
+            @NotNull LocalDate dateOfBirth,
+            String identityNumber,
+            @NotNull PersonStatus status,
             @NotBlank String major,
             LocalDate graduationDate
     ) {
@@ -83,7 +87,34 @@ public class PeopleController {
     public record ProfessorRequest(
             @NotBlank String employeeNumber,
             @NotBlank String name,
+            @NotNull LocalDate dateOfBirth,
+            String identityNumber,
+            @NotNull PersonStatus status,
             @NotBlank String department
+    ) {
+    }
+
+    /** 身份证件只返回掩码，完整号码仅在管理员新增或主动修改时写入。 */
+    public record StudentView(
+            Long id,
+            String studentNumber,
+            String name,
+            LocalDate dateOfBirth,
+            String maskedIdentityNumber,
+            PersonStatus status,
+            String major,
+            LocalDate graduationDate
+    ) {
+    }
+
+    public record ProfessorView(
+            Long id,
+            String employeeNumber,
+            String name,
+            LocalDate dateOfBirth,
+            String maskedIdentityNumber,
+            PersonStatus status,
+            String department
     ) {
     }
 }

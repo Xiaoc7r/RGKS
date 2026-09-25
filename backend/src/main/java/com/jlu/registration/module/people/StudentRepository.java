@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface StudentRepository extends JpaRepository<Student, Long> {
     Optional<Student> findByStudentNumber(String studentNumber);
+    boolean existsByStudentNumber(String studentNumber);
+    boolean existsByStudentNumberAndIdNot(String studentNumber, Long id);
 }
-

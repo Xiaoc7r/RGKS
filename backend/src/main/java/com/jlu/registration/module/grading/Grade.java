@@ -1,4 +1,4 @@
-package com.jlu.registration.module.teaching;
+package com.jlu.registration.module.grading;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -51,4 +51,3 @@ public class Grade {
         this.gradeValue = gradeValue;
     }
 }
-

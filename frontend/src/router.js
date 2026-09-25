@@ -7,6 +7,7 @@ import PeopleView from './views/PeopleView.vue'
 import CatalogView from './views/CatalogView.vue'
 import RegistrationView from './views/RegistrationView.vue'
 import TeachingView from './views/TeachingView.vue'
+import GradingView from './views/GradingView.vue'
 import OperationsView from './views/OperationsView.vue'
 import ReportCardView from './views/ReportCardView.vue'
 
@@ -18,6 +19,7 @@ const routes = [
   { path: '/catalog', component: CatalogView },
   { path: '/registration', component: RegistrationView, meta: { roles: ['STUDENT'] } },
   { path: '/teaching', component: TeachingView, meta: { roles: ['PROFESSOR'] } },
+  { path: '/grading', component: GradingView, meta: { roles: ['PROFESSOR'] } },
   { path: '/operations', component: OperationsView, meta: { roles: ['REGISTRAR'] } },
   { path: '/report-card', component: ReportCardView, meta: { roles: ['STUDENT'] } }
 ]
@@ -32,4 +34,3 @@ router.beforeEach((to) => {
 })
 
 export default router
-

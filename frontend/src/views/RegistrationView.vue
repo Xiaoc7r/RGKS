@@ -8,10 +8,10 @@ const choiceType = ref('PRIMARY')
 const priority = ref(1)
 const error = ref('')
 const message = ref('')
-
 const selectedOfferingIds = computed(() => new Set(schedule.value.items.map(item => item.offeringId)))
 const primaryCount = computed(() => schedule.value.items.filter(item => item.choiceType === 'PRIMARY').length)
 const alternateCount = computed(() => schedule.value.items.filter(item => item.choiceType === 'ALTERNATE').length)
+const priorityLimit = computed(() => choiceType.value === 'PRIMARY' ? 4 : 2)
 
 async function load() {
   error.value = ''
@@ -20,36 +20,42 @@ async function load() {
       request('/api/catalog/offerings?semester=2026-FALL'),
       request('/api/registrations/my-schedule?semester=2026-FALL')
     ])
-  } catch (reason) {
-    error.value = reason.message
-  }
+  } catch (reason) { error.value = reason.message }
 }
 
 async function add(offeringId) {
   await perform(() => request('/api/registrations/selections', {
-    method: 'POST',
-    body: JSON.stringify({ semester: '2026-FALL', offeringId, choiceType: choiceType.value, priority: Number(priority.value) })
-  }), '课程已加入课表')
+    method: 'POST', body: JSON.stringify({ semester: '2026-FALL', offeringId, choiceType: choiceType.value, priority: Number(priority.value) })
+  }), '课程已加入草稿')
+}
+
+async function update(item) {
+  await perform(() => request(`/api/registrations/selections/${item.itemId}?semester=2026-FALL`, {
+    method: 'PUT', body: JSON.stringify({ choiceType: item.choiceType, priority: Number(item.priority) })
+  }), '选课类型和优先级已更新')
 }
 
 async function remove(itemId) {
   await perform(() => request(`/api/registrations/selections/${itemId}?semester=2026-FALL`, { method: 'DELETE' }), '选课记录已删除')
 }
 
+async function saveDraft() {
+  await perform(() => request('/api/registrations/save?semester=2026-FALL', { method: 'POST' }), '课表草稿已保存')
+}
+
+async function deleteSchedule() {
+  if (!window.confirm('确认删除整张课表吗？')) return
+  await perform(() => request('/api/registrations/my-schedule?semester=2026-FALL', { method: 'DELETE' }), '课表已删除')
+}
+
 async function submitSchedule() {
-  await perform(() => request('/api/registrations/submit?semester=2026-FALL', { method: 'POST' }), '课表提交成功')
+  await perform(() => request('/api/registrations/submit?semester=2026-FALL', { method: 'POST' }), '课表提交成功，四门主选已占位')
 }
 
 async function perform(action, success) {
-  error.value = ''
-  message.value = ''
-  try {
-    await action()
-    message.value = success
-    await load()
-  } catch (reason) {
-    error.value = reason.message
-  }
+  error.value = ''; message.value = ''
+  try { await action(); message.value = success; await load() }
+  catch (reason) { error.value = reason.message }
 }
 
 onMounted(load)
@@ -59,45 +65,37 @@ onMounted(load)
   <header class="page-header">
     <p class="module-number">模块 4 · 学生选课与课表</p>
     <h2>我的 2026 秋季课表</h2>
-    <p>提交条件：4 门主选课和 2 门备选课。后端负责先修课、容量和时间冲突校验。</p>
+    <p>可创建、保存、修改、删除草稿；提交时统一检查 4 主选 + 2 备选、先修课、容量与时间冲突。</p>
   </header>
-  <div class="summary-line">
-    <strong>主选 {{ primaryCount }}/4</strong>
-    <strong>备选 {{ alternateCount }}/2</strong>
-    <span>课表状态：{{ schedule.status }}</span>
-  </div>
+  <div class="summary-line"><strong>主选 {{ primaryCount }}/4</strong><strong>备选 {{ alternateCount }}/2</strong><span>课表状态：{{ schedule.status }}</span></div>
   <div class="form-row">
-    <div class="field"><label>本次加入类型</label><select v-model="choiceType"><option>PRIMARY</option><option>ALTERNATE</option></select></div>
-    <div class="field"><label>优先级</label><select v-model="priority"><option v-for="n in 4" :key="n" :value="n">{{ n }}</option></select></div>
+    <div class="field"><label>本次加入类型</label><select v-model="choiceType" @change="priority = 1"><option>PRIMARY</option><option>ALTERNATE</option></select></div>
+    <div class="field"><label>优先级</label><select v-model="priority"><option v-for="n in priorityLimit" :key="n" :value="n">{{ n }}</option></select></div>
+    <button class="button secondary" :disabled="!schedule.id" @click="saveDraft">保存草稿</button>
     <button class="button" :disabled="primaryCount !== 4 || alternateCount !== 2" @click="submitSchedule">提交课表</button>
+    <button class="button danger" :disabled="!schedule.id" @click="deleteSchedule">删除课表</button>
   </div>
-  <p v-if="message" class="success">{{ message }}</p>
-  <p v-if="error" class="error">{{ error }}</p>
+  <p v-if="message" class="success">{{ message }}</p><p v-if="error" class="error">{{ error }}</p>
 
   <div class="table-wrap section-gap">
     <table><thead><tr><th>课程</th><th>名称</th><th>类型</th><th>优先级</th><th>状态</th><th>操作</th></tr></thead>
       <tbody><tr v-for="item in schedule.items" :key="item.itemId">
-        <td>{{ item.courseCode }}</td><td>{{ item.courseName }}</td><td>{{ item.choiceType }}</td><td>{{ item.priority }}</td><td>{{ item.status }}</td>
-        <td><button class="button danger" @click="remove(item.itemId)">移除</button></td>
+        <td>{{ item.courseCode }}</td><td>{{ item.courseName }}</td>
+        <td><select v-model="item.choiceType"><option>PRIMARY</option><option>ALTERNATE</option></select></td>
+        <td><select v-model="item.priority"><option v-for="n in item.choiceType === 'PRIMARY' ? 4 : 2" :key="n" :value="n">{{ n }}</option></select></td>
+        <td>{{ item.status }}</td><td class="actions"><button class="button secondary" @click="update(item)">保存修改</button><button class="button danger" @click="remove(item.itemId)">移除</button></td>
       </tr></tbody>
-    </table>
-    <p v-if="!schedule.items.length" class="empty">课表还是空的，请从下方课程目录加入。</p>
+    </table><p v-if="!schedule.items.length" class="empty">课表还是空的，请从下方课程目录加入。</p>
   </div>
 
   <h3>可选教学班</h3>
-  <div class="table-wrap">
-    <table><thead><tr><th>课程</th><th>名称</th><th>教师</th><th>时间</th><th>余量</th><th>操作</th></tr></thead>
-      <tbody><tr v-for="item in offerings" :key="item.offeringId">
-        <td>{{ item.courseCode }}</td><td>{{ item.courseName }}</td><td>{{ item.professorName }}</td>
-        <td>周{{ item.dayOfWeek }} 第 {{ item.startPeriod }}-{{ item.endPeriod }} 节</td>
-        <td>{{ item.capacity - item.enrolled }}</td>
-        <td><button class="button" :disabled="selectedOfferingIds.has(item.offeringId) || item.status !== 'OPEN'" @click="add(item.offeringId)">加入</button></td>
-      </tr></tbody>
-    </table>
-  </div>
+  <div class="table-wrap"><table><thead><tr><th>课程</th><th>名称</th><th>教师</th><th>先修课</th><th>时间</th><th>余量</th><th>操作</th></tr></thead>
+    <tbody><tr v-for="item in offerings" :key="item.offeringId"><td>{{ item.courseCode }}</td><td>{{ item.courseName }}</td><td>{{ item.professorName || '待定' }}</td><td>{{ item.prerequisiteCourseCode || '无' }}</td><td>周{{ item.dayOfWeek }} 第 {{ item.startPeriod }}-{{ item.endPeriod }} 节</td><td>{{ item.remainingSeats }}</td><td><button class="button" :disabled="selectedOfferingIds.has(item.offeringId) || item.status !== 'OPEN'" @click="add(item.offeringId)">加入</button></td></tr></tbody>
+  </table></div>
 </template>
 
 <style scoped>
 .summary-line { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 18px; padding: 14px 18px; background: white; border: 1px solid #dce4ed; border-radius: 8px; }
 .section-gap { margin-bottom: 24px; }
+select { min-width: 100px; padding: 7px; }
 </style>

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -48,6 +49,24 @@ public class RegistrationController {
         service.removeSelection(itemId, semester);
     }
 
+    @PutMapping("/selections/{itemId}")
+    public ScheduleView updateSelection(@PathVariable Long itemId,
+                                        @RequestParam(defaultValue = "2026-FALL") String semester,
+                                        @Valid @RequestBody UpdateSelectionRequest request) {
+        return service.updateSelection(itemId, semester, request);
+    }
+
+    @PostMapping("/save")
+    public ScheduleView save(@RequestParam(defaultValue = "2026-FALL") String semester) {
+        return service.saveDraft(semester);
+    }
+
+    @DeleteMapping("/my-schedule")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSchedule(@RequestParam(defaultValue = "2026-FALL") String semester) {
+        service.deleteSchedule(semester);
+    }
+
     @PostMapping("/submit")
     public ScheduleView submit(@RequestParam(defaultValue = "2026-FALL") String semester) {
         return service.submit(semester);
@@ -56,6 +75,12 @@ public class RegistrationController {
     public record SelectionRequest(
             @NotBlank String semester,
             @NotNull Long offeringId,
+            @NotNull ChoiceType choiceType,
+            @NotNull @Min(1) @Max(4) Integer priority
+    ) {
+    }
+
+    public record UpdateSelectionRequest(
             @NotNull ChoiceType choiceType,
             @NotNull @Min(1) @Max(4) Integer priority
     ) {
