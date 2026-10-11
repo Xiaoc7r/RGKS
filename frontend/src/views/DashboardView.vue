@@ -22,22 +22,46 @@ function accessible(module) {
 </script>
 
 <template>
-  <header class="page-header">
-    <h2>项目总览</h2>
-    <p>模块化单体部署，一个 Spring Boot 应用按七个业务包组织，恰好由 7 名成员均等负责与答辩。</p>
+  <header class="overview-hero">
+    <div>
+      <p class="module-number">COURSE DESIGN OVERVIEW</p>
+      <h2>七个人，七个边界清晰的模块。</h2>
+      <p>模块化单体部署：一个 Spring Boot 应用、一个数据库、七组可独立讲解的业务代码。当前登录身份为 <strong>{{ state.user?.displayName }}</strong>。</p>
+    </div>
+    <div class="hero-stat"><strong>7</strong><span>答辩模块</span></div>
   </header>
-  <section class="grid">
-    <article v-for="module in modules" :key="module.number" class="card">
-      <p class="module-number">模块 {{ module.number }} · {{ module.owner }}</p>
+  <div class="section-heading"><div><p class="module-number">MODULE MAP</p><h3>功能地图</h3></div><span><i></i>系统可演示</span></div>
+  <section class="module-grid">
+    <article v-for="module in modules" :key="module.number" class="card module-card" :class="{ locked: !accessible(module) }">
+      <div class="module-top"><span class="step-number">0{{ module.number }}</span><span class="role-tag">{{ module.roles }}</span></div>
       <h3>{{ module.title }}</h3>
       <p>{{ module.description }}</p>
-      <p class="muted">答辩角色：{{ module.roles }}</p>
-      <RouterLink v-if="accessible(module)" class="text-link" :to="module.route">进入模块</RouterLink>
-      <span v-else class="muted">当前角色无权访问</span>
+      <div class="module-footer"><span>{{ module.owner }}</span><RouterLink v-if="accessible(module)" class="text-link" :to="module.route">打开模块 →</RouterLink><span v-else>当前角色只读</span></div>
     </article>
   </section>
 </template>
 
 <style scoped>
-.text-link { color: #0d6fa8; font-weight: 700; text-decoration: none; }
+.overview-hero { display: flex; align-items: end; justify-content: space-between; gap: 28px; margin-bottom: 38px; padding: 34px 36px; color: #f8f1e9; background: #35312e; border-radius: 19px; }
+.overview-hero h2 { max-width: 680px; margin: 7px 0 11px; font-family: Georgia, "Noto Serif SC", serif; font-size: clamp(30px, 4vw, 45px); font-weight: 500; letter-spacing: -.035em; }
+.overview-hero > div > p:last-child { max-width: 720px; margin: 0; color: #c9c0b7; line-height: 1.75; }
+.overview-hero .module-number { color: #e3a18a; }
+.hero-stat { min-width: 128px; padding-left: 26px; border-left: 1px solid #625a54; }
+.hero-stat strong { display: block; color: #e49a7e; font-family: Georgia, serif; font-size: 58px; font-weight: 400; line-height: 1; }
+.hero-stat span { color: #c9c0b7; font-size: 12px; }
+.section-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 15px; }
+.section-heading h3 { margin: 2px 0 0; font-family: Georgia, "Noto Serif SC", serif; font-size: 24px; font-weight: 500; }
+.section-heading > span { color: #77716a; font-size: 12px; }
+.section-heading i { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #5e8b70; }
+.module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; }
+.module-card { min-height: 220px; display: flex; flex-direction: column; }
+.module-card.locked { background: #f3f0eb; box-shadow: none; }
+.module-top, .module-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.step-number { color: #d58a70; font-family: Georgia, serif; font-size: 23px; }
+.role-tag { padding: 5px 8px; color: #777068; background: #f1ede8; border-radius: 7px; font-size: 10px; }
+.module-card h3 { margin-top: 22px; font-size: 18px; }
+.module-card > p { flex: 1; margin: 0; }
+.module-footer { margin-top: 20px; padding-top: 14px; color: #918980; border-top: 1px solid #ebe5de; font-size: 11px; }
+.text-link { color: #b55336; font-weight: 800; text-decoration: none; }
+@media (max-width: 680px) { .overview-hero { align-items: flex-start; flex-direction: column; padding: 28px 24px; } .hero-stat { padding: 15px 0 0; border-left: 0; border-top: 1px solid #625a54; } }
 </style>

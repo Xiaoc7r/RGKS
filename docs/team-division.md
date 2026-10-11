@@ -1,5 +1,7 @@
 # 七人均等分工与答辩边界
 
+七份可直接背诵的独立文档统一放在 [defense/README.md](defense/README.md)。
+
 每人负责一个纵向模块：需求解释、页面、Controller/Service/Repository、异常规则、测试和现场演示。所有人都理解总流程，但不互相抢答模块细节。
 
 | 成员 | 模块 | 主目录/页面 | 代码重点 | 现场演示 |
